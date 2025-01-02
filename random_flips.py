@@ -3,8 +3,8 @@ import numpy as np
 def measure_point_biserial_correlation(scores, labels):
     """
     Compute the point-biserial correlation between:
-      - scores: a 1D numpy array of shape (n,)
-      - labels:    a 1D numpy array of shape (n,) of 0/1
+      - scores: a 1D numpy array of shape (n,) of values in [0, 1]
+      - labels: a 1D numpy array of shape (n,) of 0/1s
     Returns r_pb in [-1,1].
     """
     scores = scores.astype(float)
@@ -39,8 +39,8 @@ def create_filter_threshold_random_flips(scores,
                                          random_seed=None):
     """
     Create a 0/1 filter over 'scores' to achieve:
-      1) fraction = selectivity  (s)
-      2) point-biserial correlation ~ target_corr  (c)
+      1) fraction = selectivity (s)
+      2) point-biserial correlation ~ target_corr (c)
     
     Returns:
       labels: a numpy array of 0/1 of length len(scores)
@@ -90,8 +90,8 @@ def create_filter_threshold_random_flips(scores,
             labels_0 = np.where(labels_copy == 0)[0]
             labels_1 = np.where(labels_copy == 1)[0]
             if current_corr < target_corr:
-                # Random flip of 0 -> 1 from the worst scores
-                # and an existing 1 -> 0 to maintain s
+                # Flip a random 1 from the 10 worst correlated
+                # Flip a random 0 to preserve s
                 worst_1s = labels_1[np.argsort(scores[labels_1])[:10]] # bottom 10
                 if len(worst_1s) > 0:
                     flip_idx0 = np.random.choice(worst_1s)
@@ -99,8 +99,8 @@ def create_filter_threshold_random_flips(scores,
                     labels_copy[flip_idx0] = 0
                     labels_copy[flip_idx1] = 1
             else:
-                # Random flip of 1 -> 0 from the best scores
-                # and an existing 0 -> 1 to maintain s
+                # Flip a random 1 from the 10 best correlated
+                # Flip a random 0 to preserve s
                 best_1s = labels_1[np.argsort(scores[labels_1])[-10:]] # top 10
                 if len(best_1s) > 0:
                     flip_idx0 = np.random.choice(best_1s)
