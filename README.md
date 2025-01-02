@@ -5,7 +5,7 @@
 - selectivity _s_: fraction of 1s
 - correlation _c_: [point-biserial](https://en.wikipedia.org/wiki/Point-biserial_correlation_coefficient)
 
-## Random flips approach
+## Random flips (iterative approach)
 
 1. Sort vectors from low -> high score
 2. Label a chunk of the data:

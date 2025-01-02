@@ -67,8 +67,6 @@ def create_filter_threshold_random_flips(scores,
     
     # Measure initial correlation
     current_corr = measure_point_biserial_correlation(scores, labels)
-
-    sorted_idx = np.argsort(scores)
     
     # If correlation is off, we'll do random flips to move correlation toward target.
     
@@ -81,26 +79,34 @@ def create_filter_threshold_random_flips(scores,
     if current_err < corr_tolerance:
         return labels
     
+    total_i = 0
     # We'll attempt up to max_iter "rounds" of flipping
     for _ in range(max_iter):
         labels_copy = labels.copy()
         
         # We'll do a small batch of flips each iteration
-        for _batch in range(flip_batch_size):
+        for _ in range(flip_batch_size):
+            total_i = total_i + 1
+            labels_0 = np.where(labels_copy == 0)[0]
+            labels_1 = np.where(labels_copy == 1)[0]
             if current_corr < target_corr:
                 # Random flip of 0 -> 1 from the worst scores
-                candidate_0 = np.where(labels_copy == 0)[0]
-                candidates = candidate_0[np.argsort(scores[candidate_0])[:10]] # bottom 10
-                if len(candidates) > 0:
-                    flip_idx = np.random.choice(candidates)
-                    labels_copy[flip_idx] = 1
+                # and an existing 1 -> 0 to maintain s
+                worst_1s = labels_1[np.argsort(scores[labels_1])[:10]] # bottom 10
+                if len(worst_1s) > 0:
+                    flip_idx0 = np.random.choice(worst_1s)
+                    flip_idx1 = np.random.choice(labels_0)
+                    labels_copy[flip_idx0] = 0
+                    labels_copy[flip_idx1] = 1
             else:
                 # Random flip of 1 -> 0 from the best scores
-                candidate_1 = np.where(labels_copy == 1)[0]
-                candidates = candidate_1[np.argsort(scores[candidate_1])[-10:]] # top 10
-                if len(candidates) > 0:
-                    flip_idx = np.random.choice(candidates)
-                    labels_copy[flip_idx] = 0
+                # and an existing 0 -> 1 to maintain s
+                best_1s = labels_1[np.argsort(scores[labels_1])[-10:]] # top 10
+                if len(best_1s) > 0:
+                    flip_idx0 = np.random.choice(best_1s)
+                    flip_idx1 = np.random.choice(labels_0)
+                    labels_copy[flip_idx0] = 0
+                    labels_copy[flip_idx1] = 1
         
         # measure new correlation
         new_corr = measure_point_biserial_correlation(scores, labels_copy)
@@ -116,23 +122,27 @@ def create_filter_threshold_random_flips(scores,
         if current_err < corr_tolerance:
             break
     
+    # sorted_labels = labels[sorted_idx]
+    # print("\nLabels in ascending order of score:")
+    # print(sorted_labels)
+
     return labels
 
 if __name__ == "__main__":
     np.random.seed(42)
-    n = 1000
+    n = 10000
     # Create some random scores in range [0, 1]
     scores = np.random.rand(n)
     
     # Desired selectivity s and correlation c
-    s = 0.2
-    c = -0.5
+    s = 0.1
+    c = -0.7
     
     labels = create_filter_threshold_random_flips(
         scores,
         target_corr=c,
         selectivity=s,
-        max_iter=50,
+        max_iter=100,
         flip_batch_size=20,
         corr_tolerance=0.01,
         random_seed=123
